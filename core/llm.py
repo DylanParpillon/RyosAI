@@ -98,8 +98,11 @@ class ClientIA:
             # On extrait le texte de la réponse
             texte_genere = reponse.choices[0].message.content
             
-            logger.debug(f"Réponse générée: {texte_genere[:50]}...")
-            return texte_genere.strip()
+            # Nettoyer la réponse (enlever les préfixes indésirables)
+            texte_nettoye = self._nettoyer_reponse(texte_genere)
+            
+            logger.debug(f"Réponse générée: {texte_nettoye[:50]}...")
+            return texte_nettoye
             
         except Exception as erreur:
             # En cas d'erreur, on log et on retourne un message par défaut
@@ -120,6 +123,41 @@ class ClientIA:
         ]
         import random
         return random.choice(reponses_secours)
+    
+    def _nettoyer_reponse(self, texte: str) -> str:
+        """
+        Nettoie la réponse de l'IA pour enlever les préfixes indésirables.
+        
+        Le LLM ajoute parfois des préfixes comme "Ryosa:" ou "[Ryosa]:"
+        qu'on ne veut pas dans le chat.
+        
+        Args:
+            texte: Le texte brut généré par le LLM
+        
+        Returns:
+            Le texte nettoyé sans préfixes
+        """
+        import re
+        
+        texte = texte.strip()
+        
+        # Patterns à supprimer au début de la réponse
+        patterns_prefixes = [
+            r'^[Rr]yosa\s*:\s*',           # "Ryosa:" ou "ryosa :"
+            r'^\[Rr]yosa\]\s*:\s*',         # "[Ryosa]:"
+            r'^\([Rr]yosa\)\s*:\s*',        # "(Ryosa):"
+            r'^[Rr]yo\s*:\s*',              # "Ryo:"
+            r'^\*[Rr]yosa\*\s*:\s*',        # "*Ryosa*:"
+            r'^\"',                          # Guillemet au début
+        ]
+        
+        for pattern in patterns_prefixes:
+            texte = re.sub(pattern, '', texte)
+        
+        # Enlever les guillemets à la fin si présents
+        texte = texte.rstrip('"')
+        
+        return texte.strip()
     
     def definir_creativite(self, niveau: str):
         """
