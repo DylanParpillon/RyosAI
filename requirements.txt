@@ -1,0 +1,25 @@
+# =============================================================================
+# REQUIREMENTS.TXT - Dépendances Python pour RyosAI
+# =============================================================================
+# Pour installer toutes les dépendances, exécute cette commande:
+#   pip install -r requirements.txt
+# =============================================================================
+
+# --- BOTS DE CHAT ---
+twitchio>=2.8.0          # Bot Twitch - Permet d'écouter et envoyer des messages sur Twitch
+discord.py>=2.3.0        # Bot Discord - Permet d'écouter et envoyer des messages sur Discord
+
+# --- INTELLIGENCE ARTIFICIELLE (Ollama - IA Locale) ---
+ollama>=0.1.0            # Client pour Ollama (IA locale)
+
+# --- BASE DE DONNÉES (MongoDB) ---
+pymongo>=4.6.0           # Client MongoDB pour la persistance des données
+
+# --- SERVEUR WEB (pour l'interface de test) ---
+fastapi>=0.109.0         # Framework web moderne et rapide
+uvicorn>=0.27.0          # Serveur ASGI pour lancer FastAPI
+
+# --- UTILITAIRES ---
+python-dotenv>=1.0.0     # Charge les variables d'environnement depuis .env
+pydantic>=2.5.0          # Validation de données (utilisé par FastAPI aussi)
+pydantic-settings>=2.1.0 # Settings avec Pydantic (pour la config)

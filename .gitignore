@@ -1,0 +1,56 @@
+# =============================================================================
+# FICHIERS À IGNORER PAR GIT
+# =============================================================================
+
+# --- Fichiers secrets ---
+.env
+*.env
+!.env.example
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# --- Environnement virtuel ---
+venv/
+ENV/
+env/
+.venv/
+
+# --- IDE ---
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# --- Système ---
+.DS_Store
+Thumbs.db
+*.log
+
+# --- Données locales (maintenant dans MongoDB) ---
+data/*.json
+!data/.gitkeep
+
+# --- Autres ---
+*.bak
+*.tmp
