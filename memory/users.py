@@ -8,11 +8,14 @@
 # - Jeux préférés de quelqu'un
 # - Faits importants mentionnés
 # - Dernière fois qu'ils sont venus
+#
+# NOTE: Ce fichier utilise des fichiers JSON. Il est prévu pour être
+#       migré vers MongoDB quand tu auras installé ta VM.
 # =============================================================================
 
 from typing import Dict, Optional, List
 from datetime import datetime
-from .storage import sauvegarder_document, charger_document, charger_tous_les_documents
+from .storage import sauvegarder_json, charger_json
 import logging
 
 logger = logging.getLogger("ryosa.users")
@@ -36,26 +39,19 @@ class MemoireUtilisateurs:
         # -> ["aime les jeux de plateforme"]
     """
     
-    COLLECTION = "utilisateurs"
-    
     def __init__(self):
         """Initialise la mémoire des utilisateurs."""
         self.utilisateurs: Dict[str, dict] = {}
         self._charger()
     
     def _charger(self):
-        """Charge la mémoire depuis MongoDB."""
-        self.utilisateurs = charger_tous_les_documents(self.COLLECTION)
+        """Charge la mémoire depuis le fichier JSON."""
+        self.utilisateurs = charger_json("utilisateurs.json", defaut={})
         logger.info(f"Mémoire chargée: {len(self.utilisateurs)} utilisateurs")
     
-    def _sauvegarder_utilisateur(self, nom_utilisateur: str):
-        """Sauvegarde un utilisateur dans MongoDB."""
-        if nom_utilisateur in self.utilisateurs:
-            sauvegarder_document(
-                self.COLLECTION,
-                nom_utilisateur,
-                self.utilisateurs[nom_utilisateur]
-            )
+    def _sauvegarder(self):
+        """Sauvegarde la mémoire dans le fichier JSON."""
+        sauvegarder_json("utilisateurs.json", self.utilisateurs)
     
     def _assurer_utilisateur(self, nom_utilisateur: str) -> dict:
         """
@@ -91,7 +87,7 @@ class MemoireUtilisateurs:
         utilisateur = self._assurer_utilisateur(nom_utilisateur)
         utilisateur["derniere_visite"] = datetime.now().isoformat()
         utilisateur["nombre_messages"] = utilisateur.get("nombre_messages", 0) + 1
-        self._sauvegarder_utilisateur(nom_utilisateur.lower().strip())
+        self._sauvegarder()
     
     def ajouter_fait(self, nom_utilisateur: str, fait: str):
         """
@@ -110,7 +106,7 @@ class MemoireUtilisateurs:
         if fait not in utilisateur["faits"]:
             utilisateur["faits"].append(fait)
             logger.info(f"Nouveau fait pour {nom_utilisateur}: {fait}")
-            self._sauvegarder_utilisateur(nom_utilisateur.lower().strip())
+            self._sauvegarder()
     
     def obtenir_faits(self, nom_utilisateur: str) -> List[str]:
         """
@@ -142,7 +138,7 @@ class MemoireUtilisateurs:
         utilisateur = self._assurer_utilisateur(nom_utilisateur)
         utilisateur["preferences"][cle] = valeur
         logger.debug(f"Préférence {nom_utilisateur}.{cle} = {valeur}")
-        self._sauvegarder_utilisateur(nom_utilisateur.lower().strip())
+        self._sauvegarder()
     
     def obtenir_preference(self, nom_utilisateur: str, cle: str) -> Optional[str]:
         """
@@ -224,7 +220,7 @@ class MemoireUtilisateurs:
 # TEST DE LA MÉMOIRE UTILISATEURS
 # =============================================================================
 if __name__ == "__main__":
-    print("🧠 Test de la mémoire des utilisateurs (MongoDB)")
+    print("🧠 Test de la mémoire des utilisateurs (JSON)")
     print("=" * 50)
     
     memoire = MemoireUtilisateurs()

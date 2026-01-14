@@ -9,6 +9,9 @@
 # 3. Ryosa construit le prompt avec sa personnalité
 # 4. Ryosa appelle le LLM pour générer une réponse
 # 5. On sauvegarde l'interaction
+#
+# NOTE: Ce fichier utilise Groq pour l'instant. Il sera migré vers
+#       Ollama quand tu auras installé ta VM.
 # =============================================================================
 
 from typing import Optional, Dict, Any
@@ -46,11 +49,8 @@ class RyosaIA:
         """
         Initialise Ryosa avec tous ses composants.
         """
-        # Le client IA (Ollama) - le "cerveau pensant"
-        self.client_ia = ClientIA(
-            url_ollama=configuration.ollama_url,
-            modele=configuration.ollama_modele
-        )
+        # Le client IA (Groq) - le "cerveau pensant"
+        self.client_ia = ClientIA(cle_api=configuration.groq_api_key)
         
         # La mémoire des messages récents
         self.historique_messages = HistoriqueMessages(

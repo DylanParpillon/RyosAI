@@ -1,13 +1,13 @@
 # 🎀 RyosAI - Compagne de Stream IA
 
-> Une IA compagne adorable pour ton stream Twitch et Discord, propulsée par **Ollama** (IA locale) et **MongoDB**.
+> Une IA compagne adorable pour ton stream Twitch et Discord, propulsée par **Groq** (IA cloud) et **fichiers JSON**.
 
 ## ✨ Fonctionnalités
 
 - 🎮 **Bot Twitch** - Ryosa participe au chat de ton stream
 - 💬 **Bot Discord** - Ryosa répond aussi sur Discord
-- 🧠 **IA Locale** - Utilise Ollama, pas besoin de clé API cloud
-- 💾 **Mémoire MongoDB** - Se souvient des utilisateurs et des conversations
+- 🧠 **IA Groq** - Utilise l'API Groq (gratuit et rapide)
+- 💾 **Mémoire JSON** - Se souvient des utilisateurs et des conversations
 - 🎭 **Personnalité Unique** - Ryosa a sa propre personnalité attachante
 - 🛡️ **Anti-Spam** - Rate limiting et cooldown intégrés
 
@@ -16,10 +16,9 @@
 ### Prérequis
 
 1. **Python 3.10+**
-2. **MongoDB** (en local ou MongoDB Atlas)
-3. **Ollama** avec un modèle installé
+2. **Clé API Groq** (gratuit sur https://console.groq.com)
 
-### Étape 1: Installer les dépendances
+### Étape 1: Cloner et installer
 
 ```bash
 # Cloner le repo
@@ -36,39 +35,17 @@ source venv/bin/activate  # Linux/Mac
 pip install -r requirements.txt
 ```
 
-### Étape 2: Configurer Ollama
-
-```bash
-# Installer Ollama depuis https://ollama.ai
-
-# Télécharger un modèle
-ollama pull llama3.1
-
-# Vérifier qu'Ollama tourne
-ollama serve
-```
-
-### Étape 3: Configurer MongoDB
-
-```bash
-# Option 1: MongoDB local
-# Télécharge depuis https://www.mongodb.com/try/download/community
-
-# Option 2: Docker
-docker run -d -p 27017:27017 --name mongodb mongo:latest
-```
-
-### Étape 4: Configurer l'environnement
+### Étape 2: Configurer l'environnement
 
 ```bash
 # Copier le fichier d'exemple
 cp .env.example .env
 
 # Éditer .env avec tes tokens
-# (TWITCH_TOKEN, DISCORD_TOKEN, etc.)
+# (GROQ_API_KEY, TWITCH_TOKEN, DISCORD_TOKEN, etc.)
 ```
 
-### Étape 5: Lancer RyosAI
+### Étape 3: Lancer RyosAI
 
 ```bash
 python main.py
@@ -80,15 +57,15 @@ python main.py
 RyosAI/
 ├── config/
 │   ├── __init__.py
-│   └── settings.py         # Configuration (Ollama, MongoDB, Twitch, Discord)
+│   └── settings.py         # Configuration (Groq, Twitch, Discord)
 ├── core/
 │   ├── __init__.py
-│   ├── llm.py               # Client Ollama (IA)
+│   ├── llm.py               # Client Groq (IA)
 │   ├── personality.py       # Personnalité de Ryosa
 │   └── ryosa.py             # Cerveau principal
 ├── memory/
 │   ├── __init__.py
-│   ├── storage.py           # Stockage MongoDB
+│   ├── storage.py           # Stockage JSON
 │   └── users.py             # Mémoire des utilisateurs
 ├── listeners/
 │   ├── __init__.py
@@ -99,7 +76,7 @@ RyosAI/
 │   ├── __init__.py
 │   ├── server.py            # API FastAPI
 │   └── index.html           # Interface web de test
-├── data/                    # (Legacy, maintenant dans MongoDB)
+├── data/                    # Données JSON (mémoire)
 ├── main.py                  # Point d'entrée
 ├── requirements.txt         # Dépendances Python
 ├── .env.example             # Exemple de configuration
@@ -112,10 +89,7 @@ Toutes les variables de configuration sont dans `.env`:
 
 | Variable | Description | Exemple |
 |----------|-------------|---------|
-| `OLLAMA_URL` | URL du serveur Ollama | `http://localhost:11434` |
-| `OLLAMA_MODELE` | Modèle à utiliser | `llama3.1` |
-| `MONGODB_URL` | URL MongoDB | `mongodb://localhost:27017` |
-| `MONGODB_BASE` | Nom de la base | `ryosai` |
+| `GROQ_API_KEY` | Clé API Groq | `gsk_xxx...` |
 | `TWITCH_TOKEN` | Token OAuth Twitch | `oauth:xxx...` |
 | `TWITCH_CHANNEL` | Ta chaîne Twitch | `tosachii` |
 | `DISCORD_TOKEN` | Token bot Discord | `xxx...` |
@@ -147,13 +121,22 @@ Tu peux aussi simplement mentionner Ryosa dans ton message:
 - `Hey Ryosa, t'es là?`
 - `@Ryosa comment ça va?`
 
+## 🔮 Roadmap
+
+**Version actuelle: 1.0.0 (Groq + JSON)**
+
+Version future prévue:
+- [ ] Migration vers **Ollama** (IA locale)
+- [ ] Migration vers **MongoDB** (base de données)
+- [ ] Interface web améliorée
+
 ## 🧪 Tests
 
 ```bash
-# Tester la connexion Ollama
+# Tester le client IA
 python core/llm.py
 
-# Tester MongoDB
+# Tester le stockage JSON
 python memory/storage.py
 
 # Tester la mémoire utilisateurs

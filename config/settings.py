@@ -8,6 +8,9 @@
 # 1. Le fichier .env contient tes tokens secrets
 # 2. Ce fichier lit le .env et crée un objet "configuration"
 # 3. Partout dans le code, on importe configuration pour accéder aux valeurs
+#
+# NOTE: Ce fichier utilise Groq pour l'instant. Il est prévu pour être
+#       migré vers Ollama quand tu auras installé ta VM.
 # =============================================================================
 
 from pydantic_settings import BaseSettings
@@ -31,27 +34,12 @@ class Configuration(BaseSettings):
     """
     
     # =========================================================================
-    # OLLAMA (IA Locale)
+    # GROQ API (Intelligence Artificielle Cloud)
     # =========================================================================
-    ollama_url: str = Field(
-        default="http://localhost:11434",
-        description="URL du serveur Ollama (IA locale)"
-    )
-    ollama_modele: str = Field(
-        default="llama3.1",
-        description="Nom du modèle Ollama à utiliser"
-    )
-    
-    # =========================================================================
-    # MONGODB (Base de données)
-    # =========================================================================
-    mongodb_url: str = Field(
-        default="mongodb://localhost:27017",
-        description="URL de connexion à MongoDB"
-    )
-    mongodb_base: str = Field(
-        default="ryosai",
-        description="Nom de la base de données MongoDB"
+    # NOTE: Sera remplacé par Ollama quand la VM sera prête
+    groq_api_key: str = Field(
+        default="",
+        description="Clé API pour Groq (le cerveau de Ryosa)"
     )
     
     # =========================================================================
@@ -141,6 +129,10 @@ def verifier_configuration() -> dict:
     }
     
     # Vérifications obligatoires
+    if not configuration.groq_api_key:
+        resultat["manquants"].append("GROQ_API_KEY (requis pour le cerveau IA)")
+        resultat["valide"] = False
+    
     if not configuration.twitch_token:
         resultat["manquants"].append("TWITCH_TOKEN (requis pour Twitch)")
         resultat["valide"] = False
@@ -182,8 +174,5 @@ if __name__ == "__main__":
     print("\n📋 Valeurs actuelles:")
     print(f"   Noms de Ryosa: {configuration.obtenir_liste_noms()}")
     print(f"   Channel Twitch: {configuration.twitch_channel}")
-    print(f"   Ollama URL: {configuration.ollama_url}")
-    print(f"   Ollama Modèle: {configuration.ollama_modele}")
-    print(f"   MongoDB URL: {configuration.mongodb_url}")
-    print(f"   MongoDB Base: {configuration.mongodb_base}")
+    print(f"   Messages en contexte: {configuration.nombre_messages_contexte}")
     print(f"   Mode debug: {configuration.mode_debug}")

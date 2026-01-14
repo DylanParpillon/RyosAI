@@ -7,6 +7,9 @@
 # - Serveur Web (optionnel)
 #
 # Pour lancer Ryosa: python main.py
+#
+# NOTE: Version actuelle utilise Groq + JSON.
+#       Une version future utilisera Ollama + MongoDB.
 # =============================================================================
 
 import asyncio
@@ -31,7 +34,7 @@ def afficher_banniere():
     ║                                                       ║
     ║     🎀  RYOSAI - Compagne de Stream IA  🎀           ║
     ║                                                       ║
-    ║     Version: 2.0.0 (MongoDB + Ollama)                ║
+    ║     Version: 1.0.0 (Groq + JSON)                     ║
     ║     Créée par: Tosachii                               ║
     ║                                                       ║
     ╚═══════════════════════════════════════════════════════╝
@@ -70,8 +73,6 @@ def verifier_configuration_complete():
     print(f"   - Channel Twitch: {configuration.twitch_channel}")
     print(f"   - Noms reconnus: {configuration.obtenir_liste_noms()}")
     print(f"   - Messages en contexte: {configuration.nombre_messages_contexte}")
-    print(f"   - Ollama: {configuration.ollama_url} ({configuration.ollama_modele})")
-    print(f"   - MongoDB: {configuration.mongodb_url} ({configuration.mongodb_base})")
     
     return True
 

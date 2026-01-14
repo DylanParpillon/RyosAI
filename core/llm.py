@@ -1,16 +1,19 @@
 # =============================================================================
-# CORE/LLM.PY - Connexion au cerveau IA (Ollama)
+# CORE/LLM.PY - Connexion au cerveau IA (Groq)
 # =============================================================================
-# Ce fichier gère la communication avec Ollama, le service d'IA locale.
+# Ce fichier gère la communication avec Groq, le service qui fournit l'IA.
 #
 # Comment ça marche:
 # 1. On envoie un "prompt système" (la personnalité de Ryosa)
 # 2. On envoie l'historique de la conversation
-# 3. Ollama génère une réponse intelligente
+# 3. Groq génère une réponse intelligente
 # 4. On retourne cette réponse
+#
+# NOTE: Ce fichier est prévu pour être migré vers Ollama quand tu auras
+#       installé ta VM. Pour l'instant, on utilise Groq (cloud).
 # =============================================================================
 
-import ollama
+from groq import Groq
 from typing import List, Dict, Optional
 import logging
 
@@ -20,10 +23,10 @@ logger = logging.getLogger("ryosa.llm")
 
 class ClientIA:
     """
-    Client pour communiquer avec Ollama (le cerveau de Ryosa).
+    Client pour communiquer avec Groq (le cerveau de Ryosa).
     
     Exemple d'utilisation:
-        client = ClientIA()
+        client = ClientIA(cle_api="ta_clé_api")
         reponse = client.generer_reponse(
             prompt_systeme="Tu es Ryosa...",
             messages=[{"role": "user", "content": "Salut!"}]
@@ -32,28 +35,25 @@ class ClientIA:
     
     def __init__(
         self,
-        url_ollama: str = "http://localhost:11434",
-        modele: str = "llama3.1"
+        cle_api: str,
+        modele: str = "llama-3.1-8b-instant"
     ):
         """
-        Initialise le client Ollama.
+        Initialise le client Groq.
         
         Args:
-            url_ollama: URL du serveur Ollama (par défaut: localhost:11434)
-            modele: Le modèle à utiliser (par défaut: llama3.1)
-                   Autres options: mistral, qwen2, phi3, etc.
+            cle_api: Ta clé API Groq (depuis console.groq.com)
+            modele: Le modèle à utiliser (par défaut: llama-3.1-8b-instant)
+                   Autres options: llama-3.3-70b-versatile, mixtral-8x7b-32768
         """
-        self.url_ollama = url_ollama
+        self.client = Groq(api_key=cle_api)
         self.modele = modele
         
         # Paramètres de génération
         self.creativite = 0.7      # 0 = très prévisible, 1 = très créatif
         self.longueur_max = 150    # Limite la longueur des réponses
         
-        # Configurer le client Ollama
-        self.client = ollama.Client(host=url_ollama)
-        
-        logger.info(f"ClientIA initialisé - Modèle: {modele}, URL: {url_ollama}")
+        logger.info(f"ClientIA initialisé avec le modèle: {modele}")
     
     def generer_reponse(
         self,
@@ -82,23 +82,21 @@ class ClientIA:
             reponse = client.generer_reponse(prompt_systeme, messages)
         """
         try:
-            # On construit la requête pour Ollama
+            # On construit la requête pour Groq
             tous_les_messages = [
                 {"role": "system", "content": prompt_systeme}
             ] + messages
             
-            # On appelle l'API Ollama
-            reponse = self.client.chat(
+            # On appelle l'API Groq
+            reponse = self.client.chat.completions.create(
                 model=self.modele,
                 messages=tous_les_messages,
-                options={
-                    "temperature": creativite or self.creativite,
-                    "num_predict": self.longueur_max,
-                }
+                temperature=creativite or self.creativite,
+                max_tokens=self.longueur_max,
             )
             
             # On extrait le texte de la réponse
-            texte_genere = reponse["message"]["content"]
+            texte_genere = reponse.choices[0].message.content
             
             logger.debug(f"Réponse générée: {texte_genere[:50]}...")
             return texte_genere.strip()
@@ -110,7 +108,7 @@ class ClientIA:
     
     def _obtenir_reponse_secours(self) -> str:
         """
-        Réponse de secours si Ollama ne fonctionne pas.
+        Réponse de secours si Groq ne fonctionne pas.
         
         C'est important d'avoir un fallback pour que Ryosa puisse
         toujours répondre quelque chose même en cas de problème.
@@ -137,22 +135,6 @@ class ClientIA:
         }
         self.creativite = niveaux.get(niveau, 0.7)
         logger.info(f"Créativité ajustée: {niveau} (temp={self.creativite})")
-    
-    def verifier_connexion(self) -> bool:
-        """
-        Vérifie que la connexion à Ollama fonctionne.
-        
-        Returns:
-            True si Ollama est accessible, False sinon
-        """
-        try:
-            # Teste la connexion en listant les modèles
-            modeles = self.client.list()
-            logger.info(f"Connexion Ollama OK - {len(modeles.get('models', []))} modèles disponibles")
-            return True
-        except Exception as erreur:
-            logger.error(f"Impossible de se connecter à Ollama: {erreur}")
-            return False
 
 
 # =============================================================================
@@ -162,19 +144,22 @@ if __name__ == "__main__":
     # Ce code s'exécute uniquement si tu lances ce fichier directement
     # python core/llm.py
     
-    print("🧠 Test du client IA (Ollama)")
-    print("=" * 50)
+    import os
+    from dotenv import load_dotenv
     
-    client = ClientIA()
+    load_dotenv()
     
-    # Vérifier la connexion
-    print("\n🔌 Vérification de la connexion Ollama...")
-    if not client.verifier_connexion():
-        print("❌ Impossible de se connecter à Ollama!")
-        print("   Assure-toi qu'Ollama est lancé: ollama serve")
+    cle_api = os.getenv("GROQ_API_KEY")
+    
+    if not cle_api:
+        print("❌ GROQ_API_KEY non trouvée dans .env!")
+        print("   Va sur https://console.groq.com pour en obtenir une")
         exit(1)
     
-    print("✅ Connexion OK!")
+    print("🧠 Test du client IA (Groq)")
+    print("=" * 50)
+    
+    client = ClientIA(cle_api=cle_api)
     
     # Test simple
     prompt_systeme = "Tu es Ryosa, une IA mignonne et serviable. Réponds en français."

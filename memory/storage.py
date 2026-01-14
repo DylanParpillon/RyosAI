@@ -1,192 +1,103 @@
 # =============================================================================
-# MEMORY/STORAGE.PY - Système de stockage MongoDB
+# MEMORY/STORAGE.PY - Système de sauvegarde JSON
 # =============================================================================
 # Ce fichier gère la persistance des données - tout ce que Ryosa doit retenir
-# est sauvegardé dans MongoDB pour ne pas être perdu.
+# est sauvegardé dans des fichiers JSON pour ne pas être perdu.
 #
-# Pourquoi MongoDB?
-# - Base de données flexible (documents JSON)
-# - Facile à explorer avec MongoDB Compass
-# - Performant pour les lectures/écritures fréquentes
+# Pourquoi JSON?
+# - Simple à lire (tu peux ouvrir les fichiers et voir le contenu)
+# - Pas besoin d'installer une base de données
+# - Facile à modifier manuellement si besoin
+#
+# NOTE: Ce fichier est prévu pour être migré vers MongoDB quand tu auras
+#       installé ta VM. Pour l'instant, on utilise des fichiers JSON.
 # =============================================================================
 
-from pymongo import MongoClient
+import json
+import os
 from typing import Any, Dict, Optional, List
 from datetime import datetime
 import logging
 
-from config.settings import configuration
-
 logger = logging.getLogger("ryosa.storage")
 
-# =============================================================================
-# CONNEXION MONGODB
-# =============================================================================
-
-# Variable globale pour la connexion MongoDB
-_client_mongo: Optional[MongoClient] = None
-_base_de_donnees = None
+# Dossier où sont stockées toutes les données
+DOSSIER_DONNEES = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
 
 
-def obtenir_connexion():
+def assurer_dossier_donnees():
     """
-    Obtient la connexion MongoDB (la crée si nécessaire).
+    Crée le dossier 'data' s'il n'existe pas.
     
-    Returns:
-        La base de données MongoDB
+    Cette fonction est appelée automatiquement au démarrage.
     """
-    global _client_mongo, _base_de_donnees
-    
-    if _client_mongo is None:
-        try:
-            _client_mongo = MongoClient(configuration.mongodb_url)
-            _base_de_donnees = _client_mongo[configuration.mongodb_base]
-            logger.info(f"Connexion MongoDB établie: {configuration.mongodb_base}")
-        except Exception as erreur:
-            logger.error(f"Erreur connexion MongoDB: {erreur}")
-            raise
-    
-    return _base_de_donnees
+    if not os.path.exists(DOSSIER_DONNEES):
+        os.makedirs(DOSSIER_DONNEES)
+        logger.info(f"Dossier data créé: {DOSSIER_DONNEES}")
 
 
-def obtenir_collection(nom_collection: str):
+def sauvegarder_json(nom_fichier: str, donnees: Any) -> bool:
     """
-    Obtient une collection MongoDB.
+    Sauvegarde des données dans un fichier JSON.
     
     Args:
-        nom_collection: Nom de la collection (ex: "utilisateurs", "messages")
-    
-    Returns:
-        La collection MongoDB
-    """
-    base = obtenir_connexion()
-    return base[nom_collection]
-
-
-# =============================================================================
-# FONCTIONS CRUD (Create, Read, Update, Delete)
-# =============================================================================
-
-def sauvegarder_document(
-    collection: str,
-    document_id: str,
-    donnees: Dict[str, Any]
-) -> bool:
-    """
-    Sauvegarde un document dans MongoDB.
-    
-    Args:
-        collection: Nom de la collection
-        document_id: Identifiant unique du document
-        donnees: Les données à sauvegarder
+        nom_fichier: Nom du fichier (sans le chemin, exemple: "utilisateurs.json")
+        donnees: Les données à sauvegarder (dict, list, etc.)
     
     Returns:
         True si la sauvegarde a réussi, False sinon
     
     Exemple:
-        sauvegarder_document("utilisateurs", "tosachii", {"niveau": 10})
+        sauvegarder_json("utilisateurs.json", {"tosachii": {"niveau": 10}})
     """
+    assurer_dossier_donnees()
+    chemin_fichier = os.path.join(DOSSIER_DONNEES, nom_fichier)
+    
     try:
-        col = obtenir_collection(collection)
+        with open(chemin_fichier, "w", encoding="utf-8") as fichier:
+            # indent=2 rend le fichier lisible par un humain
+            # ensure_ascii=False permet les accents français
+            json.dump(donnees, fichier, indent=2, ensure_ascii=False)
         
-        # On utilise upsert pour créer ou mettre à jour
-        col.update_one(
-            {"_id": document_id},
-            {"$set": donnees},
-            upsert=True
-        )
-        
-        logger.debug(f"Document sauvegardé: {collection}/{document_id}")
+        logger.debug(f"Données sauvegardées: {nom_fichier}")
         return True
         
     except Exception as erreur:
-        logger.error(f"Erreur sauvegarde {collection}/{document_id}: {erreur}")
+        logger.error(f"Erreur sauvegarde {nom_fichier}: {erreur}")
         return False
 
 
-def charger_document(
-    collection: str,
-    document_id: str,
-    defaut: Any = None
-) -> Any:
+def charger_json(nom_fichier: str, defaut: Any = None) -> Any:
     """
-    Charge un document depuis MongoDB.
+    Charge des données depuis un fichier JSON.
     
     Args:
-        collection: Nom de la collection
-        document_id: Identifiant du document
-        defaut: Valeur par défaut si le document n'existe pas
+        nom_fichier: Nom du fichier à charger
+        defaut: Valeur par défaut si le fichier n'existe pas
     
     Returns:
-        Les données du document, ou la valeur par défaut
+        Les données chargées, ou la valeur par défaut
     
     Exemple:
-        utilisateur = charger_document("utilisateurs", "tosachii", defaut={})
+        utilisateurs = charger_json("utilisateurs.json", defaut={})
     """
-    try:
-        col = obtenir_collection(collection)
-        document = col.find_one({"_id": document_id})
-        
-        if document is None:
-            logger.debug(f"Document non trouvé, utilisation du défaut: {collection}/{document_id}")
-            return defaut if defaut is not None else {}
-        
-        # Retirer le _id car on utilise document_id séparément
-        document.pop("_id", None)
-        
-        logger.debug(f"Document chargé: {collection}/{document_id}")
-        return document
-        
-    except Exception as erreur:
-        logger.error(f"Erreur chargement {collection}/{document_id}: {erreur}")
+    assurer_dossier_donnees()
+    chemin_fichier = os.path.join(DOSSIER_DONNEES, nom_fichier)
+    
+    if not os.path.exists(chemin_fichier):
+        logger.debug(f"Fichier non trouvé, utilisation du défaut: {nom_fichier}")
         return defaut if defaut is not None else {}
-
-
-def supprimer_document(collection: str, document_id: str) -> bool:
-    """
-    Supprime un document de MongoDB.
     
-    Args:
-        collection: Nom de la collection
-        document_id: Identifiant du document à supprimer
-    
-    Returns:
-        True si la suppression a réussi
-    """
     try:
-        col = obtenir_collection(collection)
-        col.delete_one({"_id": document_id})
-        logger.debug(f"Document supprimé: {collection}/{document_id}")
-        return True
-    except Exception as erreur:
-        logger.error(f"Erreur suppression {collection}/{document_id}: {erreur}")
-        return False
-
-
-def charger_tous_les_documents(collection: str) -> Dict[str, Any]:
-    """
-    Charge tous les documents d'une collection.
-    
-    Args:
-        collection: Nom de la collection
-    
-    Returns:
-        Dictionnaire avec document_id -> données
-    """
-    try:
-        col = obtenir_collection(collection)
-        documents = {}
+        with open(chemin_fichier, "r", encoding="utf-8") as fichier:
+            donnees = json.load(fichier)
         
-        for doc in col.find():
-            doc_id = doc.pop("_id")
-            documents[doc_id] = doc
-        
-        logger.debug(f"Chargé {len(documents)} documents de {collection}")
-        return documents
+        logger.debug(f"Données chargées: {nom_fichier}")
+        return donnees
         
     except Exception as erreur:
-        logger.error(f"Erreur chargement collection {collection}: {erreur}")
-        return {}
+        logger.error(f"Erreur chargement {nom_fichier}: {erreur}")
+        return defaut if defaut is not None else {}
 
 
 # =============================================================================
@@ -210,9 +121,6 @@ class HistoriqueMessages:
         # Ryosa voit les 2 messages et peut répondre intelligemment
     """
     
-    COLLECTION = "historique_messages"
-    DOCUMENT_ID = "messages_recents"
-    
     def __init__(self, nombre_max: int = 10):
         """
         Args:
@@ -223,21 +131,13 @@ class HistoriqueMessages:
         self._charger()
     
     def _charger(self):
-        """Charge l'historique depuis MongoDB."""
-        donnees = charger_document(
-            self.COLLECTION,
-            self.DOCUMENT_ID,
-            defaut={"messages": []}
-        )
+        """Charge l'historique depuis le fichier."""
+        donnees = charger_json("historique_messages.json", defaut={"messages": []})
         self.liste_messages = donnees.get("messages", [])[-self.nombre_max:]
     
     def _sauvegarder(self):
-        """Sauvegarde l'historique dans MongoDB."""
-        sauvegarder_document(
-            self.COLLECTION,
-            self.DOCUMENT_ID,
-            {"messages": self.liste_messages}
-        )
+        """Sauvegarde l'historique dans le fichier."""
+        sauvegarder_json("historique_messages.json", {"messages": self.liste_messages})
     
     def ajouter_message(
         self,
@@ -321,30 +221,17 @@ class HistoriqueMessages:
 # TEST DU STORAGE
 # =============================================================================
 if __name__ == "__main__":
-    print("💾 Test du système de stockage MongoDB")
+    print("💾 Test du système de stockage JSON")
     print("=" * 50)
     
-    # Test de connexion
-    print("\n🔌 Test de connexion MongoDB...")
-    try:
-        base = obtenir_connexion()
-        print(f"   ✅ Connecté à: {configuration.mongodb_base}")
-    except Exception as e:
-        print(f"   ❌ Erreur: {e}")
-        print("   Assure-toi que MongoDB est lancé!")
-        exit(1)
-    
     # Test de sauvegarde/chargement
-    print("\n1. Test sauvegarde/chargement document:")
+    print("\n1. Test sauvegarde/chargement JSON:")
     donnees_test = {"test": "données", "nombre": 42}
-    sauvegarder_document("test", "doc_test", donnees_test)
-    charge = charger_document("test", "doc_test")
+    sauvegarder_json("test.json", donnees_test)
+    charge = charger_json("test.json")
     print(f"   Sauvegardé: {donnees_test}")
     print(f"   Chargé: {charge}")
     print(f"   ✅ OK!" if donnees_test == charge else "   ❌ Erreur!")
-    
-    # Nettoyage
-    supprimer_document("test", "doc_test")
     
     # Test de l'historique des messages
     print("\n2. Test historique des messages:")
@@ -358,4 +245,4 @@ if __name__ == "__main__":
     print(f"   Messages en mémoire: {len(historique.liste_messages)}")
     print(f"   Format IA: {historique.obtenir_contexte_pour_ia()}")
     
-    print(f"\n📁 Base MongoDB: {configuration.mongodb_base}")
+    print(f"\n📁 Dossier data: {DOSSIER_DONNEES}")
