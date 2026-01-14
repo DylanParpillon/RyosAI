@@ -34,7 +34,7 @@ def afficher_banniere():
     ║                                                       ║
     ║     🎀  RYOSAI - Compagne de Stream IA  🎀           ║
     ║                                                       ║
-    ║     Version: 1.0.0 (Groq + JSON)                     ║
+    ║     Version: 1.0.1 (Groq + JSON - Hotfix Imports)    ║
     ║     Créée par: Tosachii                               ║
     ║                                                       ║
     ╚═══════════════════════════════════════════════════════╝
