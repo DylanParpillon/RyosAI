@@ -51,7 +51,61 @@ cp .env.example .env
 python main.py
 ```
 
-## 📁 Structure du Projet
+
+## 🐧 Installation sur Proxmox / VPS Linux
+
+Voici comment installer RyosAI sur ta VM (Debian/Ubuntu) :
+
+### 1. Préparer le système
+Connecte-toi à ta VM et lance :
+
+```bash
+# Mettre à jour et installer git + python
+sudo apt update && sudo apt upgrade -y
+sudo apt install git python3 python3-venv python3-pip -y
+```
+
+### 2. Télécharger RyosAI
+```bash
+# Cloner le projet
+git clone https://github.com/DylanParpillon/RyosAI.git
+cd RyosAI
+```
+
+### 3. Installer et Configurer
+```bash
+# Créer l'environnement virtuel
+python3 -m venv venv
+source venv/bin/activate
+
+# Installer les dépendances
+pip install -r requirements.txt
+
+# Configurer les tokens
+cp .env.example .env
+nano .env
+# (Colle tes clés GROQ_API_KEY, TWITCH_TOKEN, etc. puis fais CTRL+X, Y, Enter)
+```
+
+### 4. Lancer le bot
+Pour lancer simplement :
+```bash
+./start.sh
+# ou
+python3 main.py
+```
+
+### 5. (Optionnel) Lancer en arrière-plan
+Pour que le bot continue de tourner même quand tu fermes la console, utilise `screen` :
+
+```bash
+sudo apt install screen -y
+screen -S ryosa
+./start.sh
+```
+*(Pour quitter l'écran sans couper le bot : fais `CTRL+A` puis `D`)*
+*(Pour revenir voir le bot : `screen -r ryosa`)*
+
 
 ```
 RyosAI/
