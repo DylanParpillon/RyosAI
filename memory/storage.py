@@ -201,8 +201,9 @@ class HistoriqueMessages:
             role = "assistant" if msg["est_ryosa"] else "user"
             
             # On inclut le nom de l'auteur pour le contexte
+            # On utilise un format différent pour que Ryosa ne le copie pas
             if not msg["est_ryosa"]:
-                contenu = f"[{msg['auteur']}]: {msg['contenu']}"
+                contenu = f"(Message de {msg['auteur']}): {msg['contenu']}"
             else:
                 contenu = msg["contenu"]
             
